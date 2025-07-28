@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plone-config
+  namespace: plone
+data:
+  # Change this to your actual deployment URL
+  PLONE_EXTERNAL_URL: "http://localhost:30080"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: plone
+spec:
+  selector:
+    app: plone-frontend
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plone-frontend
+  namespace: plone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: plone-frontend
+  template:
+    metadata:
+      labels:
+        app: plone-frontend
+    spec:
+      containers:
+      - name: plone-frontend
+        image: plone/plone-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: RAZZLE_INTERNAL_API_PATH
+          value: "http://backend:8080/Plone"
+        - name: PLONE_EXTERNAL_URL
+          valueFrom:
+            configMapKeyRef:
+              name: plone-config
+              key: PLONE_EXTERNAL_URL
+        - name: RAZZLE_API_PATH
+          value: "$(PLONE_EXTERNAL_URL)/++api++"
+        - name: RAZZLE_LEGACY_TRAVERSE
+          value: "true"
+        envFrom:
+        - prefix: ""
+          configMapRef:
+            name: plone-config
+            optional: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"

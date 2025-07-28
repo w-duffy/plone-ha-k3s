@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: plone
+spec:
+  selector:
+    app: plone-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plone-backend
+  namespace: plone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: plone-backend
+  template:
+    metadata:
+      labels:
+        app: plone-backend
+    spec:
+      containers:
+      - name: plone-backend
+        image: plone/plone-backend:6.1
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SITE
+          value: "Plone"
+        - name: RELSTORAGE_DSN
+          value: "dbname='plone' user='plone' host='db' password='plone'"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"

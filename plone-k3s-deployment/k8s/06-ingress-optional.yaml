@@ -1,0 +1,53 @@
+# Optional: Use this instead of NodePort for external access
+# This leverages k3s's built-in Traefik ingress controller
+# 
+# To use this:
+# 1. Comment out or remove the NodePort service in 05-nginx.yaml
+# 2. Apply this Ingress configuration
+# 3. Access via http://your-server-ip (port 80)
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: plone
+spec:
+  selector:
+    app: nginx
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP  # Changed from NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: plone-ingress
+  namespace: plone
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # For HTTPS (optional):
+    # traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    # traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx
+            port:
+              number: 80
+  # For domain-based routing (optional):
+  # - host: plone.example.com
+  #   http:
+  #     paths:
+  #     - path: /
+  #       pathType: Prefix
+  #       backend:
+  #         service:
+  #           name: nginx
+  #           port:
+  #             number: 80
